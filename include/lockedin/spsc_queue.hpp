@@ -28,6 +28,8 @@
 
 #pragma once
 
+#include <lockedin/abstract_queue.hpp>
+
 #include <atomic>
 #include <bitset>
 #include <climits>
@@ -46,7 +48,7 @@ namespace lockedin
      * @class SPSCQ
      * @brief Lock‑free, wait‑free ring buffer for one producer and one consumer.
      */
-    template <typename T> class SPSCQ
+    template <typename T> class SPSCQ : public AbstractQ<T, SPSCQ<T>>
     {
     public:
         /**
@@ -56,7 +58,8 @@ namespace lockedin
          * @throws std::logic_error if capacity is invalid (<2 or not power of 2).
          */
         explicit SPSCQ(size_t capacity)
-            : capacity_{capacity}, items_{std::make_unique<T[]>(capacity)}
+            : AbstractQ<T, SPSCQ<T>>(capacity),
+            capacity_{capacity}, items_{std::make_unique<T[]>(capacity)}
         {
             if (capacity < 2 || std::bitset<sizeof(size_t) * CHAR_BIT>(capacity).count() != 1)
                 throw std::logic_error("Capacity must be a power of 2, and greater than 1.");
