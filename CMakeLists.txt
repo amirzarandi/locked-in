@@ -28,7 +28,13 @@ endforeach()
 
 if(BUILD_TESTING)
     add_executable(abstract_queue_tests tests/abstract_queue_tests.cpp)
+    add_executable(latency_benchmark tests/latency_benchmark.cpp)
     target_link_libraries(abstract_queue_tests
+        PRIVATE
+        lockedin
+        Threads::Threads
+    )
+    target_link_libraries(latency_benchmark
         PRIVATE
         lockedin
         Threads::Threads
