@@ -13,8 +13,10 @@ void unitTest(Q& q, const int fillLimit)
     assert(q.empty());
     assert(!q.full());
 
-    for (int i = 0; i < fillLimit; ++i)
-        assert(q.push(i));
+    assert(q.push(1));
+    assert(q.push(2));
+    assert(q.push(3));
+    assert(q.push(4));
     assert(q.full());
     assert(!q.push(10));
 

@@ -27,8 +27,8 @@ foreach(sourcefile ${EXAMPLE_SOURCES})
 endforeach()
 
 if(BUILD_TESTING)
-    add_executable(abstract_queue_tests tests/abstract_queue_tests.cpp)
-    add_executable(latency_benchmark tests/latency_benchmark.cpp)
+    add_executable(abstract_queue_tests test/abstract_queue_tests.cpp)
+    add_executable(latency_benchmark perf/latency_benchmark.cpp)
     target_link_libraries(abstract_queue_tests
         PRIVATE
         lockedin
