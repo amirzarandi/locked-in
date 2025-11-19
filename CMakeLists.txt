@@ -8,6 +8,7 @@ add_library(lockedin INTERFACE)
 target_include_directories(lockedin INTERFACE include)
 
 find_package(Threads REQUIRED)
+include(CTest)
 
 if(PROJECT_IS_TOP_LEVEL)
     add_compile_options(-Wall -Wpedantic -Wextra)
@@ -24,3 +25,13 @@ foreach(sourcefile ${EXAMPLE_SOURCES})
         Threads::Threads
     )
 endforeach()
+
+if(BUILD_TESTING)
+    add_executable(abstract_queue_tests tests/abstract_queue_tests.cpp)
+    target_link_libraries(abstract_queue_tests
+        PRIVATE
+        lockedin
+        Threads::Threads
+    )
+    add_test(NAME abstract_queue_stub COMMAND abstract_queue_tests)
+endif()
