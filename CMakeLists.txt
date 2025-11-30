@@ -28,8 +28,14 @@ endforeach()
 
 if(BUILD_TESTING)
     add_executable(abstract_queue_tests test/abstract_queue_tests.cpp)
+    add_executable(spmc_queue_tests test/spmc_queue_tests.cpp)
     add_executable(latency_benchmark perf/latency_benchmark.cpp)
     target_link_libraries(abstract_queue_tests
+        PRIVATE
+        lockedin
+        Threads::Threads
+    )
+    target_link_libraries(spmc_queue_tests
         PRIVATE
         lockedin
         Threads::Threads
@@ -40,4 +46,5 @@ if(BUILD_TESTING)
         Threads::Threads
     )
     add_test(NAME abstract_queue_stub COMMAND abstract_queue_tests)
+    add_test(NAME spmc_queue_tests COMMAND spmc_queue_tests)
 endif()
