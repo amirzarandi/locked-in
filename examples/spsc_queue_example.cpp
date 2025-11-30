@@ -45,7 +45,7 @@ int main()
     producer.join();
     consumer.join();
 
-    std::cout << "PASSED" << std::endl;
+    std::cout << "PASSED\n";
 
     return 0;
 }

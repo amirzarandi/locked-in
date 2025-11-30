@@ -39,14 +39,17 @@
 #include <stdexcept>
 #include <utility>
 
-// Used to align atomic indices to separate cache lines to prevent false sharing
-#ifdef _cpp_lib_hardware_interference_size
-using std::hardware_destructive_interference_size;
-#else
-static inline constexpr std::size_t hardware_destructive_interference_size = 128UL;
-#endif
 namespace lockedin
 {
+    namespace detail
+    {
+#if defined(__cpp_lib_hardware_interference_size)
+        inline constexpr std::size_t cacheline_size = std::hardware_destructive_interference_size;
+#else
+        static inline constexpr std::size_t cacheline_size = 128UL;
+        ;
+#endif
+    } // namespace detail
 
     /**
      * @tparam T            Element type.
@@ -185,9 +188,7 @@ namespace lockedin
         size_t capacity_;            ///< total usable slots (power of 2)
         std::unique_ptr<T[]> items_; ///< heap allocated buffer
 
-        alignas(hardware_destructive_interference_size) std::atomic<size_t> readIdx_{
-            0}; ///< consumer cursor
-        alignas(hardware_destructive_interference_size) std::atomic<size_t> writeIdx_{
-            0}; ///< producer cursor
+        alignas(detail::cacheline_size) std::atomic<size_t> readIdx_{0};  ///< consumer cursor
+        alignas(detail::cacheline_size) std::atomic<size_t> writeIdx_{0}; ///< producer cursor
     };
 }

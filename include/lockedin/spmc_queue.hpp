@@ -25,8 +25,7 @@
  * (https://github.com/CppCon/CppCon2024/blob/main/Presentations/Multi_Producer_Multi_Consumer_Lock_Free_Atomic_Queue.pdf)
  */
 
-#ifndef LOCKEDIN_SPMC_QUEUE_HPP
-#define LOCKEDIN_SPMC_QUEUE_HPP
+#pragma once
 
 #include <lockedin/abstract_queue.hpp>
 
@@ -38,17 +37,16 @@
 #include <new>
 #include <stdexcept>
 #include <utility>
-#include <stdexcept>
 
 namespace lockedin
 {
     namespace detail
     {
 #if defined(__cpp_lib_hardware_interference_size)
-        inline constexpr std::size_t cacheline_size =
-            std::hardware_destructive_interference_size;
+        inline constexpr std::size_t cacheline_size = std::hardware_destructive_interference_size;
 #else
-        inline constexpr std::size_t cacheline_size = 64;
+        static inline constexpr std::size_t cacheline_size = 128UL;
+        ;
 #endif
     } // namespace detail
 
@@ -60,7 +58,8 @@ namespace lockedin
     /**
      * @brief struct for an element inside the queue containing the data and version number.
      */
-    template <typename T> struct SPMCQEntry {
+    template <typename T> struct SPMCQEntry
+    {
         T data;
         alignas(detail::cacheline_size) uint32_t version{0};
     };
@@ -82,8 +81,7 @@ namespace lockedin
          * @throws std::logic_error if capacity is invalid (<2 or not power of 2).
          */
         explicit SPMCQ(size_t capacity)
-            : AbstractSharedQ<T, SPMCQ<T>>(capacity),
-              capacity_{capacity},
+            : AbstractSharedQ<T, SPMCQ<T>>(capacity), capacity_{capacity},
               items_{std::make_unique<elem[]>(capacity)}
         {
             if (capacity < 2 || std::bitset<sizeof(size_t) * CHAR_BIT>(capacity).count() != 1)
@@ -160,7 +158,7 @@ namespace lockedin
         /* ------------------------------------------------------------------
          * Storage
          * ----------------------------------------------------------------*/
-        const size_t capacity_;            ///< total usable slots (power of 2)
+        const size_t capacity_;         ///< total usable slots (power of 2)
         std::unique_ptr<elem[]> items_; ///< heap allocated buffer shared by handles
 
         // Align atomic indices to separate cache lines to prevent false sharing
@@ -184,15 +182,17 @@ namespace lockedin
         bool push(const T& item)
         {
             const auto nxtWriteIdx_nowrap = (lWriteIdx + 1);
-            const auto nxtVersion = lVersion + 
-                            static_cast<decltype(lVersion)>(nxtWriteIdx_nowrap == capacity_);
+            const auto nxtVersion =
+                lVersion + static_cast<decltype(lVersion)>(nxtWriteIdx_nowrap == capacity_);
             const auto nxtWriteIdx = nxtWriteIdx_nowrap & (capacity_ - 1);
 
-            queue_.mWriteIndex.store(nxtWriteIdx, std::memory_order_release); // update view for writers
+            queue_.mWriteIndex.store(nxtWriteIdx,
+                                     std::memory_order_release); // update view for writers
 
             queue_.items_[lWriteIdx] = elem{item, lVersion}; // copy into buffer
 
-            queue_.mReadIndex.store(nxtWriteIdx, std::memory_order_release); // update view for readers
+            queue_.mReadIndex.store(nxtWriteIdx,
+                                    std::memory_order_release); // update view for readers
 
             lWriteIdx = nxtWriteIdx;
             lVersion = nxtVersion;
@@ -206,15 +206,17 @@ namespace lockedin
         bool push(T&& item)
         {
             const auto nxtWriteIdx_nowrap = (lWriteIdx + 1);
-            const auto nxtVersion = lVersion + 
-                            static_cast<decltype(lVersion)>(nxtWriteIdx_nowrap == capacity_);
+            const auto nxtVersion =
+                lVersion + static_cast<decltype(lVersion)>(nxtWriteIdx_nowrap == capacity_);
             const auto nxtWriteIdx = nxtWriteIdx_nowrap & (capacity_ - 1);
 
-            queue_.mWriteIndex.store(nxtWriteIdx, std::memory_order_release); // update view for writers
+            queue_.mWriteIndex.store(nxtWriteIdx,
+                                     std::memory_order_release); // update view for writers
 
             queue_.items_[lWriteIdx] = elem{std::move(item), lVersion}; // copy into buffer
 
-            queue_.mReadIndex.store(nxtWriteIdx, std::memory_order_release); // update view for readers
+            queue_.mReadIndex.store(nxtWriteIdx,
+                                    std::memory_order_release); // update view for readers
 
             lWriteIdx = nxtWriteIdx;
             lVersion = nxtVersion;
@@ -224,7 +226,10 @@ namespace lockedin
     private:
         friend class SPMCQ<T>;
 
-        explicit constexpr SPMCProducer(SPMCQ<T>& queue) noexcept : queue_{queue}, capacity_{queue.capacity_} {}
+        explicit constexpr SPMCProducer(SPMCQ<T>& queue) noexcept
+            : queue_{queue}, capacity_{queue.capacity_}
+        {
+        }
 
         SPMCQ<T>& queue_;
         const size_t capacity_;
@@ -245,7 +250,8 @@ namespace lockedin
 
         /**
          * @brief Dequeues an item. Raises an exception if consumer is overlapped
-         * @return true if successful, exception if consumer is overlapped by producer, false if queue is empty
+         * @return true if successful, exception if consumer is overlapped by producer, false if
+         * queue is empty
          */
         bool pop(T& item)
         {
@@ -254,12 +260,14 @@ namespace lockedin
 
             const elem& val = queue_.items_[lReadIdx];
             if (val.version != lVersion)
-                throw std::runtime_error("consumer overlapped at index "+std::to_string(lReadIdx));// reader too slow
+                throw std::runtime_error("consumer overlapped at index " +
+                                         std::to_string(lReadIdx)); // reader too slow
 
             item = val.data; // have to copy, move would invalidate other readers
 
             const auto nxtReadIdx_nowrap = (lReadIdx + 1);
-            const auto nxtVersion = lVersion + static_cast<decltype(lVersion)>(nxtReadIdx_nowrap==capacity_);
+            const auto nxtVersion =
+                lVersion + static_cast<decltype(lVersion)>(nxtReadIdx_nowrap == capacity_);
             lReadIdx = nxtReadIdx_nowrap & (capacity_ - 1);
             lVersion = nxtVersion;
             return true;
@@ -268,7 +276,10 @@ namespace lockedin
     private:
         friend class SPMCQ<T>;
 
-        explicit constexpr SPMCConsumer(SPMCQ<T>& queue) noexcept : queue_{queue}, capacity_{queue.capacity_} {}
+        explicit constexpr SPMCConsumer(SPMCQ<T>& queue) noexcept
+            : queue_{queue}, capacity_{queue.capacity_}
+        {
+        }
 
         SPMCQ<T>& queue_{};
         const size_t capacity_;
@@ -277,5 +288,3 @@ namespace lockedin
         alignas(detail::cacheline_size) uint32_t lVersion{0};
     };
 } // namespace lockedin
-
-#endif // LOCKEDIN_SPMC_QUEUE_HPP

@@ -25,7 +25,7 @@ void unitTest(Q& q)
 
     assert(q.push(11));
     assert(q.size() == static_cast<size_t>(fillLimit - 1));
-    std::cout << "[PASSED]" << "\n";
+    std::cout << "PASSED\n";
 }
 
 int main()
