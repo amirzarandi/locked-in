@@ -5,7 +5,7 @@
 #include <iostream>
 
 template <class Q>
-requires lockedin::detail::QueueInterface<Q, int>
+    requires lockedin::detail::QueueInterface<Q, int>
 void unitTest(Q& q)
 {
     const int fillLimit = 3;
