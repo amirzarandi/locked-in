@@ -5,8 +5,8 @@
 
 #pragma once
 
-#include <cstddef>
 #include <concepts>
+#include <cstddef>
 #include <utility>
 
 namespace lockedin
@@ -30,31 +30,35 @@ namespace lockedin
          * @brief contract for consumer implementations used with SharedQ::getConsumer
          */
         template <typename Consumer, typename Value>
-        concept ConsumerInterface = requires(Consumer& cons, const Consumer& constCons, Value& item) {
-            { cons.pop(item) } -> std::same_as<bool>;
-        };
+        concept ConsumerInterface =
+            requires(Consumer& cons, const Consumer& constCons, Value& item) {
+                { cons.pop(item) } -> std::same_as<bool>;
+            };
         /**
          * @brief contract for producer implementations used with SharedQ::getProducer
          */
         template <typename Producer, typename Value>
-        concept ProducerInterface = requires(Producer& prod, const Producer& constProd, Value& item) {
-            { prod.push(item) } -> std::same_as<bool>;
-            { prod.push(std::move(item)) } -> std::same_as<bool>;
-        };
+        concept ProducerInterface =
+            requires(Producer& prod, const Producer& constProd, Value& item) {
+                { prod.push(item) } -> std::same_as<bool>;
+                { prod.push(std::move(item)) } -> std::same_as<bool>;
+            };
         /**
-         * @brief contract for SharedQ implementations enforcing getters for the producer and consumer
+         * @brief contract for SharedQ implementations enforcing getters for the producer and
+         * consumer
          * @tparam Producer (implementing push) sharing this Queue.
          * SharedQ::getProducer() creates a producer, possibly just an alias, for ex. with SPSC/SPMC
          * @tparam Consumer (implementing pop) sharing this Queue.
          * SharedQ::getConsumer() creates a consumer, possibly just an alias, for ex. with SPSC/MPSC
          */
         template <typename SharedQueue, typename Producer, typename Consumer, typename Value>
-        concept SharedQInterface = requires(SharedQueue& queue, const SharedQueue& constQueue, Value& item) {
-            { constQueue.getProducer() } -> std::same_as<Producer>;
-            { constQueue.getConsumer() } -> std::same_as<Consumer>;
-            ProducerInterface<Producer, Value>;
-            ConsumerInterface<Consumer, Value>;
-        };
+        concept SharedQInterface =
+            requires(SharedQueue& queue, const SharedQueue& constQueue, Value& item) {
+                { constQueue.getProducer() } -> std::same_as<Producer>;
+                { constQueue.getConsumer() } -> std::same_as<Consumer>;
+                ProducerInterface<Producer, Value>;
+                ConsumerInterface<Consumer, Value>;
+            };
     } // namespace detail
 
     /**
@@ -106,8 +110,8 @@ namespace lockedin
         {
             static_assert(
                 detail::SharedQInterface<Derived,
-                                          decltype(std::declval<const Derived&>().getProducer()),
-                                          decltype(std::declval<const Derived&>().getConsumer()), T>,
+                                         decltype(std::declval<const Derived&>().getProducer()),
+                                         decltype(std::declval<const Derived&>().getConsumer()), T>,
                 "Derived queue does not satisfy the AbstractSharedQ contract.");
         }
     };

@@ -39,6 +39,12 @@
 #include <stdexcept>
 #include <utility>
 
+// Used to align atomic indices to separate cache lines to prevent false sharing
+#ifdef _cpp_lib_hardware_interference_size
+using std::hardware_destructive_interference_size;
+#else
+static inline constexpr std::size_t hardware_destructive_interference_size = 128UL;
+#endif
 namespace lockedin
 {
 
@@ -58,8 +64,8 @@ namespace lockedin
          * @throws std::logic_error if capacity is invalid (<2 or not power of 2).
          */
         explicit SPSCQ(size_t capacity)
-            : AbstractQ<T, SPSCQ<T>>(capacity),
-            capacity_{capacity}, items_{std::make_unique<T[]>(capacity)}
+            : AbstractQ<T, SPSCQ<T>>(capacity), capacity_{capacity},
+              items_{std::make_unique<T[]>(capacity)}
         {
             if (capacity < 2 || std::bitset<sizeof(size_t) * CHAR_BIT>(capacity).count() != 1)
                 throw std::logic_error("Capacity must be a power of 2, and greater than 1.");
@@ -179,10 +185,9 @@ namespace lockedin
         size_t capacity_;            ///< total usable slots (power of 2)
         std::unique_ptr<T[]> items_; ///< heap allocated buffer
 
-        // Align atomic indices to separate cache lines to prevent false sharing
-        alignas(std::hardware_destructive_interference_size) std::atomic<size_t> readIdx_{
+        alignas(hardware_destructive_interference_size) std::atomic<size_t> readIdx_{
             0}; ///< consumer cursor
-        alignas(std::hardware_destructive_interference_size) std::atomic<size_t> writeIdx_{
+        alignas(hardware_destructive_interference_size) std::atomic<size_t> writeIdx_{
             0}; ///< producer cursor
     };
 }
