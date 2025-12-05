@@ -17,9 +17,30 @@ target_include_directories(lockedin INTERFACE include)
 find_package(Threads REQUIRED)
 
 if(LOCKEDIN_BUILD_BENCHMARKS)
-    find_package(Boost REQUIRED) 
-
     include(FetchContent)
+
+    find_package(Boost QUIET)
+    if(Boost_FOUND)
+        if(NOT TARGET Boost::headers)
+            add_library(Boost::headers INTERFACE IMPORTED)
+            set_target_properties(Boost::headers PROPERTIES
+                INTERFACE_INCLUDE_DIRECTORIES "${Boost_INCLUDE_DIRS}"
+            )
+        endif()
+    else()
+        message(STATUS "Boost not found, fetching headers via FetchContent")
+        set(LOCKEDIN_BOOST_VERSION 1.84.0)
+        string(REPLACE "." "_" LOCKEDIN_BOOST_VERSION_UNDERSCORE ${LOCKEDIN_BOOST_VERSION})
+        FetchContent_Declare(
+            boost_headers
+            URL https://boostorg.jfrog.io/artifactory/main/release/${LOCKEDIN_BOOST_VERSION}/source/boost_${LOCKEDIN_BOOST_VERSION_UNDERSCORE}.tar.gz
+        )
+        FetchContent_MakeAvailable(boost_headers)
+        add_library(boost_headers INTERFACE)
+        target_include_directories(boost_headers INTERFACE ${boost_headers_SOURCE_DIR})
+        add_library(Boost::headers ALIAS boost_headers)
+    endif()
+
     set(BENCHMARK_ENABLE_TESTING OFF CACHE BOOL "" FORCE)
     FetchContent_Declare(
         benchmark
