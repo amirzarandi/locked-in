@@ -30,6 +30,7 @@ if(BUILD_TESTING)
     add_executable(abstract_queue_tests test/abstract_queue_tests.cpp)
     add_executable(spmc_queue_tests test/spmc_queue_tests.cpp)
     add_executable(latency_benchmark perf/latency_benchmark.cpp)
+    add_executable(throughput_benchmark perf/throughput_benchmark.cpp)
     target_link_libraries(abstract_queue_tests
         PRIVATE
         lockedin
@@ -41,6 +42,11 @@ if(BUILD_TESTING)
         Threads::Threads
     )
     target_link_libraries(latency_benchmark
+        PRIVATE
+        lockedin
+        Threads::Threads
+    )
+    target_link_libraries(throughput_benchmark
         PRIVATE
         lockedin
         Threads::Threads

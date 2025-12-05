@@ -13,6 +13,12 @@ namespace lockedin
 {
     namespace detail
     {
+        #if defined(__cpp_lib_hardware_interference_size)
+                inline constexpr std::size_t cacheline_size = std::hardware_destructive_interference_size;
+        #else
+                static inline constexpr std::size_t cacheline_size = 128UL;
+                ;
+        #endif
         /**
          * @brief Compile-time contract for queue implementations used with AbstractQ
          */
