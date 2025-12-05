@@ -103,7 +103,7 @@ namespace lockedin
                     if (head_.compare_exchange_weak(pos, pos + 1, std::memory_order_acq_rel,
                                                     std::memory_order_relaxed))
                     {
-                        break
+                        break;
                     }
                 }
                 else if (diff < 0)

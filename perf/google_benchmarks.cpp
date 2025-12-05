@@ -1,6 +1,8 @@
 #include <benchmark/benchmark.h>
 
+#include <boost/lockfree/queue.hpp>
 #include <boost/lockfree/spsc_queue.hpp>
+
 #include <lockedin/spsc_queue.hpp>
 
 #include <atomic>
@@ -15,6 +17,7 @@ enum class queue_type
 {
     spsc,
     boost_spsc,
+    boost_mpsc,
     mutex
 };
 
@@ -39,6 +42,26 @@ template <typename T> struct queue_wrapper<T, queue_type::spsc> : public lockedi
 template <typename T> struct queue_wrapper<T, queue_type::boost_spsc>
 {
     boost::lockfree::spsc_queue<T> queue;
+    explicit queue_wrapper(size_t n_elements) : queue(n_elements)
+    {
+    }
+
+    void push(const T& value)
+    {
+        while (!queue.push(value))
+        {
+        }
+    }
+
+    bool pop(T& value)
+    {
+        return queue.pop(value);
+    }
+};
+
+template <typename T> struct queue_wrapper<T, queue_type::boost_mpsc>
+{
+    boost::lockfree::queue<T> queue;
     explicit queue_wrapper(size_t n_elements) : queue(n_elements)
     {
     }
@@ -187,14 +210,17 @@ template <queue_type type> static void roundtrip_single_thread(benchmark::State&
 
 BENCHMARK(callsite_push_latency_single_producer<queue_type::spsc>)->Args({});
 BENCHMARK(callsite_push_latency_single_producer<queue_type::boost_spsc>)->Args({});
+BENCHMARK(callsite_push_latency_single_producer<queue_type::boost_mpsc>)->Args({});
 BENCHMARK(callsite_push_latency_single_producer<queue_type::mutex>)->Args({});
 
 BENCHMARK(roundtrip_single_producer<queue_type::spsc>)->Args({});
 BENCHMARK(roundtrip_single_producer<queue_type::boost_spsc>)->Args({});
+BENCHMARK(callsite_push_latency_single_producer<queue_type::boost_mpsc>)->Args({});
 BENCHMARK(roundtrip_single_producer<queue_type::mutex>)->Args({});
 
 BENCHMARK(roundtrip_single_thread<queue_type::spsc>)->Args({});
 BENCHMARK(roundtrip_single_thread<queue_type::boost_spsc>)->Args({});
+BENCHMARK(roundtrip_single_thread<queue_type::boost_mpsc>)->Args({});
 BENCHMARK(roundtrip_single_thread<queue_type::mutex>)->Args({});
 
 BENCHMARK_MAIN();
