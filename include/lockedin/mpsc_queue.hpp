@@ -81,9 +81,9 @@ namespace lockedin
         std::size_t mask_;
         std::unique_ptr<Cell[]> buffer_;
 
-        alignas(std::hardware_destructive_interference_size) std::atomic<std::size_t> head_{0};
+        alignas(detail::cacheline_size) std::atomic<std::size_t> head_{0};
 
-        alignas(std::hardware_destructive_interference_size) std::atomic<std::size_t> tail_{0};
+        alignas(detail::cacheline_size) std::atomic<std::size_t> tail_{0};
 
         template <typename U> bool emplace_impl(U&& value)
         {
