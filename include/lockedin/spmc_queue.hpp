@@ -264,6 +264,12 @@ namespace lockedin
             return true;
         }
 
+        void respawn()
+        {
+            lReadIdx = queue_.mReadIndex.load(std::memory_order_relaxed);
+            lVersion = queue_.items_[lReadIdx].version;
+        }
+
     private:
         friend class SPMCQ<T>;
 
