@@ -169,8 +169,10 @@ template <queue_type type> static void callsite_push_latency_single_producer(ben
                 bool popped = q.pop(out);
                 if (popped)
                 {
-                    if (out != (next++))
-                        throw std::runtime_error("oops");
+                    if constexpr (type != queue_type::mpsc)
+                        if (out != (next))
+                            throw std::runtime_error("oops");
+                    next++;
                 }
                 benchmark::DoNotOptimize(popped);
                 benchmark::DoNotOptimize(out);
@@ -180,7 +182,7 @@ template <queue_type type> static void callsite_push_latency_single_producer(ben
     started.wait(false);
 
     size_t iteration = 0;
-    for (auto _ : st)
+    for ([[maybe_unused]] auto _ : st)
         q.push(iteration++);
 
     should_run = false;
@@ -214,7 +216,7 @@ template <queue_type type> static void roundtrip_single_producer(benchmark::Stat
     started.wait(false);
 
     size_t iteration = 0;
-    for (auto _ : st)
+    for ([[maybe_unused]] auto _ : st)
     {
         const size_t to_send = iteration++;
         q1.push(to_send);
@@ -222,8 +224,9 @@ template <queue_type type> static void roundtrip_single_producer(benchmark::Stat
         while (!q2.pop(to_recv))
         {
         }
-        if (to_send != to_recv)
-            throw std::runtime_error("oops");
+        if constexpr (type != queue_type::mpsc)
+            if (to_send != to_recv)
+                throw std::runtime_error("oops");
     }
 
     should_run = false;
@@ -238,14 +241,15 @@ template <queue_type type> static void roundtrip_single_thread(benchmark::State&
     queue_wrapper<size_t, type> q1(queue_size);
 
     size_t iteration = 0;
-    for (auto _ : st)
+    for ([[maybe_unused]] auto _ : st)
     {
         const size_t to_send = iteration++;
         q1.push(to_send);
         size_t to_recv = 0;
         q1.pop(to_recv);
-        if (to_recv != to_send)
-            throw std::runtime_error("oops");
+        if constexpr (type != queue_type::mpsc)
+            if (to_recv != to_send)
+                throw std::runtime_error("oops");
     }
 
     st.SetItemsProcessed(st.iterations());
@@ -284,7 +288,7 @@ static void roundtrip_single_producer_spmc(benchmark::State& st)
     started.wait(false);
 
     size_t iteration = 0;
-    for (auto _ : st)
+    for ([[maybe_unused]] auto _ : st)
     {
         const size_t to_send = iteration++;
         q1.push(to_send);
@@ -320,7 +324,7 @@ static void roundtrip_single_thread_spmc(benchmark::State& st)
     auto consumer = q1.make_consumer();
 
     size_t iteration = 0;
-    for (auto _ : st)
+    for ([[maybe_unused]] auto _ : st)
     {
         const size_t to_send = iteration++;
         q1.push(to_send);
@@ -396,7 +400,7 @@ static void callsite_push_latency_spmc_multi_consumer(benchmark::State& st)
     started.notify_all();
 
     size_t iteration = 0;
-    for (auto _ : st)
+    for ([[maybe_unused]] auto _ : st)
         q.push(++iteration);
 
     should_run = false;
@@ -410,7 +414,7 @@ static void callsite_push_latency_spmc_multi_consumer(benchmark::State& st)
 }
 
 BENCHMARK(callsite_push_latency_single_producer<queue_type::spsc>)->Args({});
-// BENCHMARK(callsite_push_latency_single_producer<queue_type::mpsc>)->Args({});
+BENCHMARK(callsite_push_latency_single_producer<queue_type::mpsc>)->Args({});
 BENCHMARK(callsite_push_latency_spmc_multi_consumer)->Arg(1)->Arg(2)->Arg(4);
 BENCHMARK(callsite_push_latency_single_producer<queue_type::boost_spsc>)->Args({});
 BENCHMARK(callsite_push_latency_single_producer<queue_type::boost_mpsc>)->Args({});
@@ -418,14 +422,14 @@ BENCHMARK(callsite_push_latency_single_producer<queue_type::mutex>)->Args({});
 
 BENCHMARK(roundtrip_single_producer<queue_type::spsc>)->Args({});
 BENCHMARK(roundtrip_single_producer_spmc)->Args({});
-// BENCHMARK(roundtrip_single_producer<queue_type::mpsc>)->Args({});
+BENCHMARK(roundtrip_single_producer<queue_type::mpsc>)->Args({});
 BENCHMARK(roundtrip_single_producer<queue_type::boost_spsc>)->Args({});
 BENCHMARK(roundtrip_single_producer<queue_type::boost_mpsc>)->Args({});
 BENCHMARK(roundtrip_single_producer<queue_type::mutex>)->Args({});
 
 BENCHMARK(roundtrip_single_thread<queue_type::spsc>)->Args({});
 BENCHMARK(roundtrip_single_thread_spmc)->Args({});
-// BENCHMARK(roundtrip_single_thread<queue_type::mpsc>)->Args({});
+BENCHMARK(roundtrip_single_thread<queue_type::mpsc>)->Args({});
 BENCHMARK(roundtrip_single_thread<queue_type::boost_spsc>)->Args({});
 BENCHMARK(roundtrip_single_thread<queue_type::boost_mpsc>)->Args({});
 BENCHMARK(roundtrip_single_thread<queue_type::mutex>)->Args({});
